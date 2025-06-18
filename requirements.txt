@@ -1,0 +1,63 @@
+# 核心TTS依赖
+torch>=2.0.0
+torchaudio>=2.0.0
+numpy>=1.21.0
+scipy>=1.8.0
+
+# 音频处理
+soundfile>=0.12.1
+librosa>=0.10.0
+resampy>=0.4.0
+audioread>=3.0.0
+
+# 模型和深度学习
+safetensors>=0.3.0
+transformers>=4.20.0
+accelerate>=0.20.0
+
+# 数据处理
+pandas>=1.5.0
+pillow>=9.0.0
+
+# 系统工具
+tqdm>=4.64.0
+psutil>=5.9.0
+requests>=2.28.0
+urllib3>=1.26.0
+
+# 开发和测试
+pytest>=7.0.0
+pytest-cov>=4.0.0
+flake8>=5.0.0
+black>=22.0.0
+
+# 可选GPU支持 (根据需要安装)
+# torch-audio>=2.0.0+cu118
+# torch>=2.0.0+cu118
+
+# 语音处理增强功能
+webrtcvad>=2.0.10
+noisereduce>=3.0.0
+
+# 配置文件处理
+pyyaml>=6.0
+toml>=0.10.2
+
+# 进度条和可视化
+rich>=13.0.0
+matplotlib>=3.6.0
+
+# HTTP服务 (如果需要Web API)
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# 文本处理
+jieba>=0.42.1
+opencc>=1.1.0
+
+# 日志记录
+loguru>=0.7.0
+
+# 类型检查
+mypy>=1.0.0
+types-requests>=2.28.0

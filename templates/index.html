@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kokoro TTS 中文版 - 测试应用</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin: 5px;
+        }
+        .status-online { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
+        .status-offline { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
+        .voice-category {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .voice-btn {
+            margin: 3px;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .voice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .generation-area {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .audio-player {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .generation-info {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .example-texts {
+            background: #fff3cd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .example-text {
+            cursor: pointer;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+            transition: all 0.2s;
+        }
+        .example-text:hover {
+            background: #ffc107;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- 页面头部 -->
+            <div class="header">
+                <h1><i class="fas fa-microphone-alt"></i> Kokoro TTS 中文版</h1>
+                <p class="mb-3">功能强大的中文文本转语音测试平台</p>
+                <div>
+                    <span class="status-badge {{ 'status-online' if kokoro_available else 'status-offline' }}">
+                        <i class="fas fa-{{ 'check-circle' if kokoro_available else 'times-circle' }}"></i>
+                        Kokoro {{ '已加载' if kokoro_available else '未安装' }}
+                    </span>
+                    <span class="status-badge status-online">
+                        <i class="fas fa-microchip"></i> {{ device.upper() }}
+                    </span>
+                    <span class="status-badge status-online">
+                        <i class="fas fa-music"></i> 
+                        {{ voices.female|length + voices.male|length + voices.english|length }} 音色
+                    </span>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <div class="row">
+                    <!-- 左侧：音色选择 -->
+                    <div class="col-md-4">
+                        <h4><i class="fas fa-palette"></i> 音色选择</h4>
+                        
+                        <!-- 女声音色 -->
+                        <div class="voice-category">
+                            <h6><i class="fas fa-female text-pink"></i> 女声音色 ({{ voices.female|length }}个)</h6>
+                            <div id="female-voices">
+                                {% for voice in voices.female %}
+                                <button class="btn btn-outline-pink voice-btn" data-voice="{{ voice }}" data-gender="female">
+                                    {{ voice }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 男声音色 -->
+                        <div class="voice-category">
+                            <h6><i class="fas fa-male text-primary"></i> 男声音色 ({{ voices.male|length }}个)</h6>
+                            <div id="male-voices">
+                                {% for voice in voices.male %}
+                                <button class="btn btn-outline-primary voice-btn" data-voice="{{ voice }}" data-gender="male">
+                                    {{ voice }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 英文音色 -->
+                        <div class="voice-category">
+                            <h6><i class="fas fa-globe text-success"></i> 英文音色 ({{ voices.english|length }}个)</h6>
+                            <div id="english-voices">
+                                {% for voice in voices.english %}
+                                <button class="btn btn-outline-success voice-btn" data-voice="{{ voice }}" data-gender="english">
+                                    {{ voice }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：文本输入和生成 -->
+                    <div class="col-md-8">
+                        <div class="generation-area">
+                            <h4><i class="fas fa-edit"></i> 文本输入</h4>
+                            
+                            <!-- 示例文本 -->
+                            <div class="example-texts">
+                                <h6><i class="fas fa-lightbulb"></i> 点击使用示例文本：</h6>
+                                <div class="example-text" data-text="欢迎使用Kokoro TTS中文版！这是一个功能强大的文本转语音系统。">
+                                    📢 欢迎词 - 欢迎使用Kokoro TTS中文版！
+                                </div>
+                                <div class="example-text" data-text="春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。">
+                                    🌸 古诗 - 春晓（孟浩然）
+                                </div>
+                                <div class="example-text" data-text="人工智能技术正在快速发展，语音合成是其中重要的应用方向之一。">
+                                    🤖 科技 - 人工智能介绍
+                                </div>
+                                <div class="example-text" data-text="Hello, welcome to Kokoro TTS! This is a powerful text-to-speech system.">
+                                    🌍 英文 - Welcome message
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="text-input" class="form-label">输入文本 <span class="text-muted">(最多500字符)</span></label>
+                                <textarea id="text-input" class="form-control" rows="4" 
+                                          placeholder="请输入要转换为语音的文本..."></textarea>
+                                <div class="mt-2">
+                                    <span class="text-muted">字符数: </span>
+                                    <span id="char-count">0</span>/500
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="selected-voice" class="form-label">选中音色</label>
+                                    <input id="selected-voice" class="form-control" value="zf_001" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="language-select" class="form-label">语言</label>
+                                    <select id="language-select" class="form-select">
+                                        <option value="zh">中文</option>
+                                        <option value="en">英文</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button id="generate-btn" class="btn btn-primary btn-lg" 
+                                    {{ 'disabled' if not kokoro_available }}>
+                                <i class="fas fa-play"></i> 生成语音
+                            </button>
+
+                            <!-- 加载状态 -->
+                            <div id="loading" class="loading">
+                                <div class="spinner"></div>
+                                <p>正在生成语音，请稍候...</p>
+                            </div>
+
+                            <!-- 音频播放区域 -->
+                            <div id="audio-result" class="audio-player" style="display: none;">
+                                <h5><i class="fas fa-volume-up"></i> 生成结果</h5>
+                                <audio id="audio-player" controls class="w-100 mb-3">
+                                    您的浏览器不支持音频播放。
+                                </audio>
+                                
+                                <div id="generation-info" class="generation-info"></div>
+                                
+                                <div class="mt-3">
+                                    <button id="download-btn" class="btn btn-success">
+                                        <i class="fas fa-download"></i> 下载音频
+                                    </button>
+                                    <button id="regenerate-btn" class="btn btn-secondary">
+                                        <i class="fas fa-redo"></i> 重新生成
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentFilename = null;
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // 绑定事件监听器
+            bindEventListeners();
+            
+            // 默认选中第一个女声
+            const firstFemaleVoice = document.querySelector('[data-gender="female"]');
+            if (firstFemaleVoice) {
+                selectVoice(firstFemaleVoice.dataset.voice, 'female');
+            }
+        }
+        
+        function bindEventListeners() {
+            // 音色选择按钮
+            document.querySelectorAll('.voice-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    selectVoice(this.dataset.voice, this.dataset.gender);
+                });
+            });
+            
+            // 示例文本点击
+            document.querySelectorAll('.example-text').forEach(example => {
+                example.addEventListener('click', function() {
+                    document.getElementById('text-input').value = this.dataset.text;
+                    updateCharCount();
+                });
+            });
+            
+            // 文本输入字符计数
+            document.getElementById('text-input').addEventListener('input', updateCharCount);
+            
+            // 生成按钮
+            document.getElementById('generate-btn').addEventListener('click', generateSpeech);
+            
+            // 重新生成按钮
+            document.getElementById('regenerate-btn').addEventListener('click', generateSpeech);
+            
+            // 下载按钮
+            document.getElementById('download-btn').addEventListener('click', downloadAudio);
+        }
+        
+        function selectVoice(voice, gender) {
+            // 更新选中状态
+            document.querySelectorAll('.voice-btn').forEach(btn => {
+                btn.classList.remove('btn-primary', 'btn-success', 'btn-pink');
+                if (btn.dataset.gender === 'female') {
+                    btn.classList.add('btn-outline-primary');
+                } else if (btn.dataset.gender === 'male') {
+                    btn.classList.add('btn-outline-primary');
+                } else {
+                    btn.classList.add('btn-outline-success');
+                }
+            });
+            
+            // 高亮选中的按钮
+            const selectedBtn = document.querySelector(`[data-voice="${voice}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.remove('btn-outline-primary', 'btn-outline-success');
+                if (gender === 'female') {
+                    selectedBtn.classList.add('btn-primary');
+                } else if (gender === 'male') {
+                    selectedBtn.classList.add('btn-primary');
+                } else {
+                    selectedBtn.classList.add('btn-success');
+                }
+            }
+            
+            // 更新选中音色显示
+            document.getElementById('selected-voice').value = voice;
+            
+            // 根据音色类型自动设置语言
+            if (voice.startsWith('zf_') || voice.startsWith('zm_')) {
+                document.getElementById('language-select').value = 'zh';
+            } else {
+                document.getElementById('language-select').value = 'en';
+            }
+        }
+        
+        function updateCharCount() {
+            const text = document.getElementById('text-input').value;
+            const count = text.length;
+            document.getElementById('char-count').textContent = count;
+            
+            // 超出限制时显示警告
+            const countElement = document.getElementById('char-count');
+            if (count > 500) {
+                countElement.style.color = '#dc3545';
+                countElement.parentElement.style.fontWeight = 'bold';
+            } else {
+                countElement.style.color = '#6c757d';
+                countElement.parentElement.style.fontWeight = 'normal';
+            }
+        }
+        
+        async function generateSpeech() {
+            const text = document.getElementById('text-input').value.trim();
+            const voice = document.getElementById('selected-voice').value;
+            const language = document.getElementById('language-select').value;
+            
+            if (!text) {
+                alert('请输入要转换的文本');
+                return;
+            }
+            
+            if (text.length > 500) {
+                alert('文本长度不能超过500字符');
+                return;
+            }
+            
+            // 显示加载状态
+            showLoading(true);
+            hideAudioResult();
+            
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: voice,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayAudioResult(result);
+                } else {
+                    alert('生成失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('网络错误: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('generate-btn').disabled = show;
+        }
+        
+        function hideAudioResult() {
+            document.getElementById('audio-result').style.display = 'none';
+        }
+        
+        function displayAudioResult(result) {
+            // 设置音频源
+            const audioPlayer = document.getElementById('audio-player');
+            audioPlayer.src = result.audio_data;
+            
+            // 显示生成信息
+            const infoHtml = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>音色:</strong> ${result.voice}<br>
+                        <strong>文本长度:</strong> ${result.text_length} 字符<br>
+                        <strong>音频时长:</strong> ${result.audio_length} 秒
+                    </div>
+                    <div class="col-md-6">
+                        <strong>生成时间:</strong> ${result.generation_time} 秒<br>
+                        <strong>采样率:</strong> ${result.sample_rate} Hz<br>
+                        <strong>文件名:</strong> ${result.filename}
+                    </div>
+                </div>
+            `;
+            document.getElementById('generation-info').innerHTML = infoHtml;
+            
+            // 保存文件名用于下载
+            currentFilename = result.filename;
+            
+            // 显示结果区域
+            document.getElementById('audio-result').style.display = 'block';
+            
+            // 自动播放
+            audioPlayer.play().catch(e => {
+                console.log('自动播放被浏览器阻止，请手动点击播放');
+            });
+        }
+        
+        function downloadAudio() {
+            if (currentFilename) {
+                window.open(`/api/download/${currentFilename}`);
+            }
+        }
+    </script>
+</body>
+</html>

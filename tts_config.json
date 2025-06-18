@@ -1,0 +1,35 @@
+{
+  "tts_engines": {
+    "kokoro": {
+      "enabled": true,
+      "repo_id": "hexgrad/Kokoro-82M-v1.1-zh",
+      "sample_rate": 24000,
+      "max_text_length": 500,
+      "description": "Kokoro TTS - 快速轻量级TTS模型",
+      "supported_languages": ["zh", "en"],
+      "voice_categories": ["female", "male", "english"]
+    },
+    "stable_tts": {
+      "enabled": true,
+      "model_path": "./stable_tts_module/checkpoints/checkpoint_0.pt",
+      "vocoder_path": "./stable_tts_module/vocoders/pretrained/vocos.pt",
+      "vocoder_type": "vocos",
+      "sample_rate": 24000,
+      "max_text_length": 1000,
+      "description": "StableTTS - 基于Flow-matching和DiT的高质量TTS模型",
+      "supported_languages": ["chinese", "english", "japanese"],
+      "default_params": {
+        "step": 25,
+        "temperature": 1.0,
+        "length_scale": 1.0,
+        "solver": "dopri5",
+        "cfg": 3.0
+      }
+    }
+  },
+  "default_engine": "kokoro",
+  "output_dir": "./output",
+  "temp_dir": "./temps",
+  "max_concurrent_requests": 5,
+  "enable_api_logging": true
+}
