@@ -1,0 +1,3 @@
+[submodule "stable_tts_module"]
+	path = stable_tts_module
+	url = https://github.com/KdaiP/StableTTS.git
